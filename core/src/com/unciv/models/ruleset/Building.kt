@@ -36,6 +36,7 @@ class Building : RulesetStatsObject(), INonPerpetualConstruction {
     override var hurryCostModifier = 0
     var isWonder = false
     var isNationalWonder = false
+    var isInternationalProject = false
     @Readonly fun isAnyWonder() = isWonder || isNationalWonder
     var requiredBuilding: String? = null
 
