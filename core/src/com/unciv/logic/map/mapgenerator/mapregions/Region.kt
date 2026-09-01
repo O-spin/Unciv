@@ -16,6 +16,7 @@ class Region (val tileMap: TileMap, val rect: Rectangle, val continentID: Int = 
     var type = "Hybrid" // being an undefined or indeterminate type
     var luxury: String? = null
     var startPosition: HexCoord? = null
+    val startCandidates: MutableList<HexCoord> = mutableListOf()
     val assignedMinorCivs = ArrayList<Civilization>()
 
     var affectedByWorldWrap = false

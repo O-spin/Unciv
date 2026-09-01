@@ -24,6 +24,7 @@ class MapGenTileData(val tile: Tile, val region: Region?, ruleset: Ruleset) {
 
     var isGoodStart = true
     var startScore = 0
+    val flavor = HashMap<String, Int>()
 
     init {
         evaluate(ruleset)

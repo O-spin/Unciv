@@ -28,21 +28,25 @@ object RegionStartFinder {
 
         // First check center rect, then middle. Only check the outer area if no good sites found
         val centerTiles = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, 0.33f)).toSet()
-        if (findGoodPosition(centerTiles, region, tileData, fallbackTiles)) return
+        findGoodPositions(centerTiles, region, tileData, fallbackTiles)
+        if (region.startCandidates.size > 3) return addCloseStartPenalty(region, region.startCandidates, tileData)
         
         val middleDonut = region.tileMap.getTilesInRectangle(getCentralRectangle(region.rect, 0.67f))
             .filterNot { it in centerTiles }.toSet()
-        if (findGoodPosition(middleDonut, region, tileData, fallbackTiles)) return 
+        findGoodPositions(middleDonut, region, tileData, fallbackTiles)
+        if (region.startCandidates.size > 3) return addCloseStartPenalty(region, region.startCandidates, tileData)
 
         // Now check the outer tiles. For these we don't care about rivers, coasts etc
         val outerDonut = region.tileMap.getTilesInRectangle(region.rect)
             .filterNot { it in centerTiles || it in middleDonut}
-        if (findEdgePosition(outerDonut, region, tileData, fallbackTiles)) return
+        findEdgePositions(outerDonut, region, tileData, fallbackTiles)
+        if (region.startCandidates.isNotEmpty()) return addCloseStartPenalty(region, region.startCandidates, tileData)
         
         findFallbackPosition(fallbackTiles, tileData, region)
+        addCloseStartPenalty(region, region.startCandidates, tileData)
     }
 
-    private fun findGoodPosition(centerTiles: Set<Tile>, region: Region, tileData: TileDataMap, fallbackTiles: HashSet<Tile>): Boolean {
+    private fun findGoodPositions(centerTiles: Set<Tile>, region: Region, tileData: TileDataMap, fallbackTiles: HashSet<Tile>) {
         val riverTiles = HashSet<Tile>()
         val wetTiles = HashSet<Tile>()
         val dryTiles = HashSet<Tile>()
@@ -63,24 +67,21 @@ object RegionStartFinder {
         }
         // Did we find a good start position?
         for (list in sequenceOf(riverTiles, wetTiles, dryTiles)) {
-            if (list.any { tileData[it]!!.isGoodStart }) {
-                setRegionStart(region, list
-                    .filter { tileData[it]!!.isGoodStart }.maxByOrNull { tileData[it]!!.startScore }!!.position, tileData)
-                return true
+            for (tile in list) {
+                if (tileData[tile]!!.isGoodStart) addRegionCandidateStart(region, tile.position, tileData)
             }
             if (list.isNotEmpty()) // Save the best not-good-enough spots for later fallback
                 fallbackTiles.add(list.maxByOrNull { tileData[it]!!.startScore }!!)
         }
-        return false
     }
 
 
-    private fun findEdgePosition(
+    private fun findEdgePositions(
         outerDonut: Sequence<Tile>,
         region: Region,
         tileData: TileDataMap,
         fallbackTiles: HashSet<Tile>
-    ): Boolean {
+    ) {
         val dryTiles = HashSet<Tile>()
         for (tile in outerDonut) {
             if (region.continentID != -1 && region.continentID != tile.getContinent())
@@ -101,16 +102,14 @@ object RegionStartFinder {
                     .aerialDistanceTo(it)
             }!!
 
-            setRegionStart(
+            addRegionCandidateStart(
                 region,
                 closestToCenter.position,
                 tileData
             )
-            return true
         }
         if (dryTiles.isNotEmpty())
             fallbackTiles.add(dryTiles.maxByOrNull { tileData[it]!!.startScore }!!)
-        return false
     }
 
     private fun findFallbackPosition(
@@ -121,7 +120,7 @@ object RegionStartFinder {
         // Fallback time. Just pick the one with best score
         val fallbackPosition = fallbackTiles.maxByOrNull { tileData[it]!!.startScore }
         if (fallbackPosition != null) {
-            setRegionStart(region, fallbackPosition.position, tileData)
+            addRegionCandidateStart(region, fallbackPosition.position, tileData)
             return
         }
 
@@ -130,7 +129,7 @@ object RegionStartFinder {
         val panicTerrain = region.tileMap.ruleset!!.terrains.values.first { it.type == TerrainType.Land }.name
         region.tileMap[panicPosition].baseTerrain = panicTerrain
         region.tileMap[panicPosition].setTerrainFeatures(listOf())
-        setRegionStart(region, panicPosition, tileData)
+        addRegionCandidateStart(region, panicPosition, tileData)
     }
     
     /** @returns a scaled according to [proportion] Rectangle centered over [originalRect] */
@@ -171,6 +170,13 @@ object RegionStartFinder {
         for (ring in 1..3) {
             // Sum up the values for this ring
             for (outerTile in tile.getTilesAtDistance(ring)) {
+                if (outerTile.terrainFeatures.isNotEmpty()) {
+                    for (terrain in outerTile.terrainFeatures) {
+                        localData.flavor[terrain] = (localData.flavor[terrain] ?: 0) + 1
+                    }
+                }
+                else localData.flavor[outerTile.baseTerrain] = (localData.flavor[outerTile.baseTerrain] ?: 0) + 1
+                
                 val outerTileData = tileData[outerTile]!!
                 if (outerTileData.isJunk)
                     totalJunk++
@@ -222,12 +228,16 @@ object RegionStartFinder {
         localData.startScore = totalScore
     }
 
-    private fun setRegionStart(region: Region, position:HexCoord, tileData: TileDataMap) {
-        region.startPosition = position
+    private fun addRegionCandidateStart(region: Region, position:HexCoord, tileData: TileDataMap) {
+        region.startCandidates += position
+    }
 
-        for ((ring, penalty) in closeStartPenaltyForRing) {
-            for (outerTile in region.tileMap[position].getTilesAtDistance(ring))
-                tileData[outerTile]!!.addCloseStartPenalty(penalty)
+    private fun addCloseStartPenalty(region: Region, positions: List<HexCoord>, tileData: TileDataMap) {
+        for (position in positions) {
+            for ((ring, penalty) in closeStartPenaltyForRing) {
+                for (outerTile in region.tileMap[position].getTilesAtDistance(ring))
+                    tileData[outerTile]!!.addCloseStartPenalty(penalty)
+            }
         }
     }
 }
