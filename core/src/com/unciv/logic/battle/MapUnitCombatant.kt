@@ -17,12 +17,12 @@ class MapUnitCombatant(val unit: MapUnit) : ICombatant {
     override fun getTile(): Tile = unit.getTile()
     override fun getName(): String = unit.name
     override fun isDefeated(): Boolean = unit.health <= 0
-    override fun isInvisible(to: Civilization): Boolean = unit.isInvisible(to)
     override fun canAttack(): Boolean = unit.canAttack()
     override fun matchesFilter(filter: String, multiFilter: Boolean) = unit.matchesFilter(filter, multiFilter)
     override fun getAttackSound() = unit.baseUnit.attackSound.let {
         if (it == null) UncivSound.Click else UncivSound(it)
     }
+    override fun isVisibleTo(to: Civilization): Boolean = unit.isVisibleTo(to)
 
     override fun getNotificationDisplay(leadingText: String): String {
         val isUnitUnnamed = unit.instanceName.isNullOrEmpty()

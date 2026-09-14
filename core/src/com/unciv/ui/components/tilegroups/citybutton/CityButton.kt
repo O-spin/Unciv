@@ -192,13 +192,13 @@ class CityButton(val foreignCityView: ForeignCityView, private val tileGroup: Ti
             } else {
                 moveButtonDown()
                 if ((unitTable.selectedUnit == null || !unitTable.selectedUnit!!.hasMovement()) && belongsToViewingCiv())
-                    unitTable.citySelected(foreignCityView.getCity())
+                    unitTable.citySelected(foreignCityView)
             }
         }
         onRightClick(action = ::enterCityOrInfoPopup)
 
         // when deselected, move city button to its original position
-        if (unitTable.selectedCity != foreignCityView.getCity() && unitTable.selectedUnit?.getTile() != foreignCityView.getCenterTile() && unitTable.selectedSpy == null)
+        if (unitTable.selectedCity != foreignCityView && unitTable.selectedUnit?.getTile() != foreignCityView.getCenterTile() && unitTable.selectedSpy == null)
             moveButtonUp()
     }
 

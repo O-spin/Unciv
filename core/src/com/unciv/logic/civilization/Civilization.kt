@@ -100,8 +100,10 @@ class Civilization : IsPartOfGameInfoSerialization {
     @Transient
     var viewableTiles = setOf<Tile>()
 
+    /** For each tile some detector unit of ours can see, the unit filters ([UniqueType.CanSeeInvisibleUnits])
+     *  it could detect there - independent of what (if anything) currently occupies the tile. */
     @Transient
-    var viewableInvisibleUnitsTiles = setOf<Tile>()
+    var viewableInvisibleUnitsTiles = mapOf<Tile, Set<String>>()
 
     /** This is for performance since every movement calculation depends on this, see MapUnit comment */
     @Transient
@@ -343,7 +345,7 @@ class Civilization : IsPartOfGameInfoSerialization {
         toReturn.cityStateResource = cityStateResource
         toReturn.cityStateUniqueUnit = cityStateUniqueUnit
         toReturn.flagsCountdown.putAll(flagsCountdown)
-        toReturn.temporaryUniques.addAll(temporaryUniques)
+        temporaryUniques.mapTo(toReturn.temporaryUniques) { it.clone() }
         toReturn.hasEverOwnedOriginalCapital = hasEverOwnedOriginalCapital
         toReturn.passableImpassables.addAll(passableImpassables)
         toReturn.numMinorCivsAttacked = numMinorCivsAttacked
@@ -1172,6 +1174,7 @@ class Civilization : IsPartOfGameInfoSerialization {
      */
     // At the moment, the "last unit down" callers do not pass a location, the city ones do - because the former isn't interesting
     fun destroy(notificationLocation: HexCoord? = null) {
+        revealMapWhenDefeated()
         val destructionText = if (isMajorCiv()) "The civilization of [$civName] has been destroyed!"
             else "The City-State of [$civName] has been destroyed!"
         for (civ in gameInfo.civilizations) {
@@ -1192,6 +1195,12 @@ class Civilization : IsPartOfGameInfoSerialization {
         }
         if (gameInfo.isEspionageEnabled())
             espionageManager.removeAllSpies()
+    }
+
+    /** Reveals the entire map to a human player defeated in a singleplayer game, so they can watch the game play out. */
+    fun revealMapWhenDefeated() {
+        if (gameInfo.gameParameters.isOnlineMultiplayer || !isCurrentPlayer()) return
+        for (tile in gameInfo.tileMap.values) tile.setExplored(this, true)
     }
 
     fun updateProximity(otherCiv: Civilization, preCalculated: Proximity? = null): Proximity = cache.updateProximity(otherCiv, preCalculated)

@@ -1,3 +1,54 @@
+## 4.21.19
+
+Prevent mod archives from overwriting saves and settings - By Angais
+
+Improve desktop font rendering with mipmaps and preserve glyph contrast - By finalpatch (new contributor!)
+
+When changing rulesets, clamp number of city states available to match new ruleset
+
+Show stat icons in civilopedia when displaying stats
+
+Fix altas generation fuzziness errors
+
+Hide unit table "summary" for civs with no units (e.g. Spectator)
+
+Unify "extra ranged attack" logic - extra attacks no longer trigger regular attack effects (XP, on-kill uniques, on-damage uniques) separately from existing triggers
+
+Solved crash when city screen update happens parallel to screen change
+
+## 4.21.18
+
+Avoid ANRs from multiple sources
+
+Avoid game load crashes for unit/tile neighbor adjacency conditionals
+
+Adds auto map size - By O-spin
+
+By Angais: 
+- Apply warmonger penalties to alliance motivation 
+- Apply city filters to spy effectiveness 
+
+By varchasgopalaswamy (new contributor!):
+- Fix bug where unplacable great people will disappear 
+- Fix movement history perspective 
+
+By SomeTroglodyte:
+- Font fallback for missing glyphs 
+- Translation generation preserves existing data for mods, can backup 
+
+## 4.21.17
+
+Decrease initial startup time
+
+By Angais:
+- AI: Keep inquisitor conversion targets in owned cities 
+- Retain lost data when saving games 
+- Fixed trade evaluation error  
+
+By varchasgopalaswamy:
+- Fixed tile info update bug when changing perspective in spectator 
+- fixed city selection bug bug 
+
 ## 4.21.16
 
 Fixed visual flash when entering a city

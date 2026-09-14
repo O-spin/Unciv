@@ -17,15 +17,6 @@ object WorldMapTileUpdater {
     private val WorldMapHolder.tileMapView get() = worldScreen.selectedGameView.tileMapView
 
      fun WorldMapHolder.updateTiles(civView: CivView) {
-        val viewingCiv = civView.getCiv()
-
-        if (isMapRevealEnabled(civView)) {
-            // Only needs to be done once - this is so the minimap will also be revealed
-            tileGroups.values.forEach {
-                it.tile.setExplored(viewingCiv, true)
-                it.isForceVisible = true } // So we can see all resources, regardless of tech
-        }
-
         // General update of all tiles
         for (tileGroup in tileGroups.values)
             tileGroup.update(civView)
@@ -76,12 +67,12 @@ object WorldMapTileUpdater {
                 // Fade out population icons
                 group.layerMisc.dimPopulation(true)
 
-                val shownImprovementName = group.tile.getShownImprovement(unit.civ)
+                val shownImprovementName = group.tileView.getTile().getShownImprovement(unit.civ)
                 val shownImprovement = unit.civ.gameInfo.ruleset.tileImprovements[shownImprovementName]
 
                 // Fade out improvement icons (but not barb camps or ruins)
                 if (shownImprovement != null &&
-                    !shownImprovement.isBarbarianCampEquivalent(group.tile.stateThisTile) &&
+                    !shownImprovement.isBarbarianCampEquivalent(group.tileView.getTile().stateThisTile) &&
                     !shownImprovement.isAncientRuinsEquivalent(unit.cache.state))
                     group.layerImprovement.dimImprovement(true)
             }
@@ -138,7 +129,7 @@ object WorldMapTileUpdater {
                 } else if (tileView.aerialDistanceTo(unitView.getTile()) <= unitView.getRange()) {
                     // The tile is within attack range
                     group.layerMisc.overlayTerrain(Color.RED)
-                } else if (unitView.isExplored(tileView) && tileView.aerialDistanceTo(unitView.getTile()) <= unitView.getRange()*2) {
+                } else if (unitView.civ().hasExplored(tileView) && tileView.aerialDistanceTo(unitView.getTile()) <= unitView.getRange()*2) {
                     // The tile is within move range
                     group.layerMisc.overlayTerrain(if (unitView.canMoveTo(tileView)) Color.WHITE else Color.BLUE)
                 }
@@ -199,7 +190,7 @@ object WorldMapTileUpdater {
                 if (nukeBlastRadius >= 0)
                     selectedTile!!.getTile().getTilesInDistance(nukeBlastRadius)
                         // Should not display invisible submarine units even if the tile is visible.
-                        .filter { targetTile -> (targetTile.isVisible(unit.civ) && targetTile.getUnits().any { !it.isInvisible(unit.civ) })
+                        .filter { targetTile -> (targetTile.isVisible(unit.civ) && targetTile.getUnits().any { it.isVisibleTo(unit.civ) })
                                 || (targetTile.isCityCenter() && unit.civ.hasExplored(targetTile)) }
                         .map { AttackableTile(unit.getTile(), it, 1f, null) }
                         .toList()
@@ -236,7 +227,7 @@ object WorldMapTileUpdater {
     private fun WorldMapHolder.updateTilesForSelectedSpy(spy: Spy) {
         for (group in tileGroups.values) {
             group.layerOverlay.reset()
-            if (!group.tile.isCityCenter())
+            if (!group.tileView.isCityCenter())
                 group.layerImprovement.dimImprovement(true)
             group.layerCityButton.moveDown()
         }
