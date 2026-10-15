@@ -223,6 +223,15 @@ class WorldScreen(
 
         if (restoreState != null) restore(restoreState)
 
+        if (viewingCiv.isCurrentPlayer() && !viewingCiv.hasMovedAutomatedUnits && UncivGame.Current.settings.automatedUnitsMoveOnTurnStart) {
+            viewingCiv.hasMovedAutomatedUnits = true
+            Concurrency.run("Automated units move on turn start") {
+                for (unit in viewingCiv.units.getCivUnits())
+                    unit.doAction()
+                launchOnGLThread { shouldUpdate = true }
+            }
+        }
+
         // don't run update() directly, because the UncivGame.worldScreen should be set so that the city buttons and tile groups
         //  know what the viewing civ is.
         shouldUpdate = true

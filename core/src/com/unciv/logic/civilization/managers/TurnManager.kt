@@ -76,7 +76,8 @@ class TurnManager(val civInfo: Civilization) {
 
         for (unit in civInfo.units.getCivUnits()) UnitTurnManager(unit).startTurn()
 
-        if (civInfo.playerType == PlayerType.Human && UncivGame.Current.settings.automatedUnitsMoveOnTurnStart) {
+        val isOfflineOrOurTurn = !civInfo.gameInfo.gameParameters.isOnlineMultiplayer || civInfo.playerId == UncivGame.Current.settings.multiplayer.getUserId()
+        if (civInfo.playerType == PlayerType.Human && isOfflineOrOurTurn && UncivGame.Current.settings.automatedUnitsMoveOnTurnStart) {
             civInfo.hasMovedAutomatedUnits = true
             for (unit in civInfo.units.getCivUnits())
                 unit.doAction()
