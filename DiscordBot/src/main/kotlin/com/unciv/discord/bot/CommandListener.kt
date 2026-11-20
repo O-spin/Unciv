@@ -267,7 +267,7 @@ class CommandListener : ListenerAdapter() {
                     RegisterResult.ALREADY_REGISTERED -> "⚠️ ${user.asMention} is already registered!"
                     RegisterResult.UNCIV_ID_TAKEN -> "❌ That Unciv ID is already registered by another player!"
                 }
-                event.reply(replyText).queue()
+                event.reply(replyText).setEphemeral(true).queue()
             }
 
             "adminsetelo" -> {
