@@ -60,7 +60,7 @@ class CommandListener : ListenerAdapter() {
             "register" -> {
                 val userDiscordId = event.user.idLong
                 val uncivId = event.getOption("unciv_id")?.asString
-                val replyText = when (PlayerManager.registerUser(data, userDiscordId, uncivId)) {
+                val replyText = when (PlayerManager.registerUser(data, userDiscordId, uncivId, event.user.effectiveName)) {
                     RegisterResult.SUCCESS -> "✅ You are now registered${if (uncivId != null) " with Unciv ID **$uncivId**" else ""}, ${event.user.asMention}!"
                     RegisterResult.ALREADY_REGISTERED -> "⚠️ You are already registered!"
                     RegisterResult.UNCIV_ID_TAKEN -> "❌ That Unciv ID is already registered by another player!"
@@ -82,11 +82,12 @@ class CommandListener : ListenerAdapter() {
 
             "elo" -> {
                 val user = event.getOption("user")?.asUser ?: event.user
-                val player = PlayerManager.getPlayer(data, user.idLong)
+                val player = PlayerManager.getPlayer(data, user.idLong, user.effectiveName)
+                val username = player?.discordName ?: user.effectiveName
                 if (player != null) {
-                    event.reply("⭐ ${user.asMention} has **${player.elo} ELO**").queue()
+                    event.reply("⭐ **$username** has **${player.elo} ELO**").queue()
                 } else {
-                    event.reply("❌ ${user.asMention} is not registered. Use `/register` first!").queue()
+                    event.reply("❌ **${user.asMention}** is not registered. Use `/register` first!").queue()
                 }
             }
 /*
@@ -262,7 +263,7 @@ class CommandListener : ListenerAdapter() {
             "adminregisterother" -> {
                 val user = event.getOption("user")!!.asUser
                 val uncivId = event.getOption("unciv_id")?.asString
-                val replyText = when (PlayerManager.registerUser(data, user.idLong, uncivId)) {
+                val replyText = when (PlayerManager.registerUser(data, user.idLong, uncivId, user.effectiveName)) {
                     RegisterResult.SUCCESS -> "✅ ${user.asMention} has been registered${if (uncivId != null) " with Unciv ID **$uncivId**" else ""}!"
                     RegisterResult.ALREADY_REGISTERED -> "⚠️ ${user.asMention} is already registered!"
                     RegisterResult.UNCIV_ID_TAKEN -> "❌ That Unciv ID is already registered by another player!"

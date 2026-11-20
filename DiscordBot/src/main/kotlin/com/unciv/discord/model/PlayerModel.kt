@@ -7,7 +7,8 @@ data class PlayerEntry(
     val userDiscordId: Long,
     var uncivId: String? = null,
     var elo: Int = 1000,
-    var token: Int = 0
+    var token: Int = 0,
+    var discordName: String? = null
 )
 
 enum class RegisterResult {

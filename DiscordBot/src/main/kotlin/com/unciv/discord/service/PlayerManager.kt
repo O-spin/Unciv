@@ -13,14 +13,14 @@ object PlayerManager {
         return players.any { player -> player.uncivId != null && player.uncivId.equals(uncivId, ignoreCase = true) }
     }
 
-    fun registerUser(data: BotData, userDiscordId: Long, initialUncivId: String? = null): RegisterResult {
+    fun registerUser(data: BotData, userDiscordId: Long, initialUncivId: String? = null, discordName: String? = null): RegisterResult {
         if (data.players.any { it.userDiscordId == userDiscordId }) {
             return RegisterResult.ALREADY_REGISTERED
         }
         if (!initialUncivId.isNullOrBlank() && data.hasUncivId(initialUncivId)) {
             return RegisterResult.UNCIV_ID_TAKEN
         }
-        data.players.add(PlayerEntry(userDiscordId, initialUncivId?.takeIf { it.isNotBlank() }, 1000, 0))
+        data.players.add(PlayerEntry(userDiscordId, initialUncivId?.takeIf { it.isNotBlank() }, 1000, 0, discordName))
         StorageService.saveData(data)
         return RegisterResult.SUCCESS
     }
@@ -38,7 +38,14 @@ object PlayerManager {
         return AddIdResult.SUCCESS
     }
 
-    fun getPlayer(data: BotData, userDiscordId: Long): PlayerEntry? = data.players.find { it.userDiscordId == userDiscordId }
+    fun getPlayer(data: BotData, userDiscordId: Long, discordName: String? = null): PlayerEntry? {
+        val player = data.players.find { it.userDiscordId == userDiscordId }
+        if (player != null && !discordName.isNullOrBlank() && player.discordName != discordName) {
+            player.discordName = discordName
+            StorageService.saveData(data)
+        }
+        return player
+    }
 
     fun setElo(data: BotData, userDiscordId: Long, newElo: Int): Boolean {
         val player = getPlayer(data, userDiscordId) ?: return false
@@ -71,7 +78,8 @@ object PlayerManager {
     fun leaderboard(data: BotData): String {
         val sorted = data.players.sortedByDescending { it.elo }
         return sorted.take(10).mapIndexed { i, player -> 
-            "${i + 1}. `<@${player.userDiscordId}>` — ${player.elo} ELO"
+            val name = player.discordName ?: "User ${player.userDiscordId}"
+            "${i + 1}. **$name** — ${player.elo} ELO"
         }.joinToString("\n")
     }
 
