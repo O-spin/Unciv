@@ -71,7 +71,7 @@ object PlayerManager {
     fun leaderboard(data: BotData): String {
         val sorted = data.players.sortedByDescending { it.elo }
         return sorted.take(10).mapIndexed { i, player -> 
-            "${i + 1}. <@${player.userDiscordId}> — ${player.elo} ELO"
+            "${i + 1}. `<@${player.userDiscordId}>` — ${player.elo} ELO"
         }.joinToString("\n")
     }
 
