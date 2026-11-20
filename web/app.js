@@ -1386373,7 +1386373,7 @@ let culmma_UnitActionsReligion_getSpreadReligionAction$lambda$0 = ($$city, $$uni
         jl_AbstractStringBuilder_append($previousReligion, $rt_s(5517));
         $ptr = 42;
     case 42:
-        $tmp = cum_Religion_getName($newReligion);
+        $tmp = cum_Religion_getReligionDisplayName($newReligion);
         if ($rt_suspending()) {
             break main;
         }
@@ -1386386,7 +1386386,8 @@ let culmma_UnitActionsReligion_getSpreadReligionAction$lambda$0 = ($$city, $$uni
         if ($rt_suspending()) {
             break main;
         }
-        $newReligion = $tmp;
+        var$11 = $tmp;
+        var$7 = $$city.$location;
         $ptr = 44;
     case 44:
         culc_Notification$NotificationCategory_$callClinit();
@@ -1386394,11 +1386395,12 @@ let culmma_UnitActionsReligion_getSpreadReligionAction$lambda$0 = ($$city, $$uni
             break main;
         }
         $previousReligion = culc_Notification$NotificationCategory_Religion;
-        var$15 = $rt_createArray(jl_String, 0);
+        var$15 = $rt_createArray(jl_String, 1);
+        var$15.data[0] = $rt_s(1596);
         $$unit = $rt_nullCheck($$unit);
         $ptr = 45;
     case 45:
-        culc_Civilization_addNotification($$unit, $newReligion, $previousReligion, var$15);
+        culc_Civilization_addNotification1($$unit, var$11, var$7, $previousReligion, var$15);
         if ($rt_suspending()) {
             break main;
         }
