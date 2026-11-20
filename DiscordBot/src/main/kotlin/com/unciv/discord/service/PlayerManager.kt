@@ -25,6 +25,14 @@ object PlayerManager {
         return RegisterResult.SUCCESS
     }
 
+    fun unregisterUser(data: BotData, userDiscordId: Long): Boolean {
+        val removed = data.players.removeIf { it.userDiscordId == userDiscordId }
+        if (removed) {
+            StorageService.saveData(data)
+        }
+        return removed
+    }
+
     fun changeUncivId(data: BotData, userDiscordId: Long, newUncivId: String): AddIdResult {
         val player = data.players.find { it.userDiscordId == userDiscordId } ?: return AddIdResult.NOT_REGISTERED
         if (player.uncivId != null && player.uncivId.equals(newUncivId, ignoreCase = true)) {

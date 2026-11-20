@@ -68,6 +68,16 @@ class CommandListener : ListenerAdapter() {
                 event.reply(replyText).setEphemeral(true).queue()
             }
 
+            "unregister" -> {
+                val userDiscordId = event.user.idLong
+                val success = PlayerManager.unregisterUser(data, userDiscordId)
+                if (success) {
+                    event.reply("✅ You have been successfully unregistered from the bot.").setEphemeral(true).queue()
+                } else {
+                    event.reply("⚠️ You are not registered yet!").setEphemeral(true).queue()
+                }
+            }
+
             "changeuncivid" -> {
                 val userDiscordId = event.user.idLong
                 val uncivId = event.getOption("unciv_id")!!.asString
@@ -269,6 +279,16 @@ class CommandListener : ListenerAdapter() {
                     RegisterResult.UNCIV_ID_TAKEN -> "❌ That Unciv ID is already registered by another player!"
                 }
                 event.reply(replyText).setEphemeral(true).queue()
+            }
+
+            "adminunregisteruser" -> {
+                val user = event.getOption("user")!!.asUser
+                val success = PlayerManager.unregisterUser(data, user.idLong)
+                if (success) {
+                    event.reply("✅ Successfully unregistered ${user.asMention}.").setEphemeral(true).queue()
+                } else {
+                    event.reply("⚠️ ${user.asMention} is not registered.").setEphemeral(true).queue()
+                }
             }
 
             "adminsetelo" -> {

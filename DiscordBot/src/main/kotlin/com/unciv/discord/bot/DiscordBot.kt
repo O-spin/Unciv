@@ -117,6 +117,7 @@ object DiscordBot {
             Commands.slash("ping", "Replies with Pong!"),
             Commands.slash("register", "Register yourself as a player")
                 .addOption(OptionType.STRING, "unciv_id", "Optional Unciv ID/name", false),
+            Commands.slash("unregister", "Unregister your account from the bot"),
             Commands.slash("changeuncivid", "Change your Unciv ID")
                 .addOption(OptionType.STRING, "unciv_id", "The new Unciv ID", true),
             Commands.slash("elo", "Show your or another user's ELO")
@@ -153,6 +154,8 @@ object DiscordBot {
             Commands.slash("adminregisterother", "Admin: Register another player")
                 .addOption(OptionType.USER, "user", "The user to register", true)
                 .addOption(OptionType.STRING, "unciv_id", "Optional Unciv ID/name", false),
+            Commands.slash("adminunregisteruser", "Admin: Unregister another user")
+                .addOption(OptionType.USER, "user", "The user to unregister", true),
             Commands.slash("adminsetelo", "Admin: Set a player's ELO")
                 .addOption(OptionType.USER, "user", "Target user", true)
                 .addOption(OptionType.INTEGER, "value", "New ELO value", true),
