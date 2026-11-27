@@ -27,10 +27,17 @@ class CommandListener : ListenerAdapter() {
     }
 
     private fun buildGameProposalText(proposal: GameProposal, accepted: Int, total: Int): String {
-        val mentions = proposal.invitedDiscordIds.map { "<@$it>" }.joinToString(" ")
         return buildString {
             appendLine("🎮 **New Unciv Game Proposal** by <@${proposal.proposerId}>!")
-            appendLine("• **Players:** $mentions")
+            if (proposal.presetName != null) {
+                appendLine("• **Preset:** `${proposal.presetName}`")
+            }
+            appendLine("• **Players & Status:**")
+            for (id in proposal.invitedDiscordIds) {
+                val hasAccepted = proposal.acceptedDiscordIds.contains(id)
+                val status = if (hasAccepted) "✅ Accepted" else "⏳ Pending"
+                appendLine("  - <@$id> — $status")
+            }
             appendLine("• **Map Size:** ${proposal.mapSize ?: "Auto"}")
             appendLine("• **Map Type:** ${proposal.mapType ?: "Pangaea"}")
             appendLine("• **Difficulty:** ${proposal.difficulty ?: "King"}")
@@ -126,6 +133,11 @@ class CommandListener : ListenerAdapter() {
                 }
             }
 
+            "presetstats" -> {
+                val stats = PlayerManager.getPresetUsageStats(data)
+                event.reply("📊 **Game Preset Usage Statistics**:\n$stats").queue()
+            }
+
             "tokens" -> {
                 val user = event.getOption("user")?.asUser ?: event.user
                 val tokens = PlayerManager.getTokens(data, user.idLong)
@@ -137,15 +149,23 @@ class CommandListener : ListenerAdapter() {
 
             "startgame" -> {
                 val playersInput = event.getOption("players")!!.asString
-                val mapSize = event.getOption("map_size")?.asString
-                val mapType = event.getOption("map_type")?.asString
-                val difficulty = event.getOption("difficulty")?.asString
-                val cityStates = event.getOption("city_states")?.asString
-                val strategicBalance = event.getOption("strategic_balance")?.asBoolean
-                val legendaryStart = event.getOption("legendary_start")?.asBoolean
-                val worldWrap = event.getOption("world_wrap")?.asBoolean
-                val skipTurnHours = event.getOption("skip_turn_hours")?.asInt
-                val averageTurnTimeHours = event.getOption("average_time_autoresign_hours")?.asInt
+                val presetName = event.getOption("preset")?.asString
+                val preset = presetName?.let { PlayerManager.getPreset(data, it) }
+
+                if (presetName != null && preset == null) {
+                    event.reply("❌ Preset **`$presetName`** not found! Use `/listpresets` to see available presets.").setEphemeral(true).queue()
+                    return
+                }
+
+                val mapSize = event.getOption("map_size")?.asString ?: preset?.mapSize
+                val mapType = event.getOption("map_type")?.asString ?: preset?.mapType
+                val difficulty = event.getOption("difficulty")?.asString ?: preset?.difficulty
+                val cityStates = event.getOption("city_states")?.asString ?: preset?.cityStates
+                val strategicBalance = event.getOption("strategic_balance")?.asBoolean ?: preset?.strategicBalance
+                val legendaryStart = event.getOption("legendary_start")?.asBoolean ?: preset?.legendaryStart
+                val worldWrap = event.getOption("world_wrap")?.asBoolean ?: preset?.worldWrap
+                val skipTurnHours = event.getOption("skip_turn_hours")?.asInt ?: preset?.skipTurnHours
+                val averageTurnTimeHours = event.getOption("average_time_autoresign_hours")?.asInt ?: preset?.averageTurnTimeHours
 
                 val entries = playersInput.split(",").filter { it.isNotEmpty() }
                 val invitedDiscordIds = mutableSetOf<Long>()
@@ -177,6 +197,7 @@ class CommandListener : ListenerAdapter() {
                     proposalId = proposalId,
                     proposerId = event.user.idLong,
                     playersInput = playersInput,
+                    presetName = preset?.name ?: presetName,
                     mapSize = mapSize,
                     mapType = mapType,
                     difficulty = difficulty,
@@ -214,6 +235,9 @@ class CommandListener : ListenerAdapter() {
                             trackedGamesData
                         )
                         if (trackedGame != null) {
+                            if (proposal.presetName != null) {
+                                PlayerManager.recordPresetUsage(data, proposal.presetName)
+                            }
                             event.hook.sendMessage("✅ Successfully generated a new Unciv map and uploaded game to server!\n**Game ID:** `${trackedGame.gameId}`").queue()
                         } else {
                             event.hook.sendMessage("❌ Failed to generate map or upload game to server.").queue()
@@ -232,7 +256,54 @@ class CommandListener : ListenerAdapter() {
                     .queue()
             }
 
-            // ==================== ADMIN COMMANDS ====================
+            "listpresets" -> {
+                val presets = PlayerManager.listPresets(data)
+                val text = buildString {
+                    appendLine("📋 **Available Game Presets:**")
+                    for (p in presets) {
+                        appendLine("• **`${p.name}`**: Map: ${p.mapSize ?: "Auto"}, Type: ${p.mapType ?: "Pangaea"}, Difficulty: ${p.difficulty ?: "King"}, City-States: ${p.cityStates ?: "1x"}, Strategic Balance: ${p.strategicBalance ?: true}, Legendary Start: ${p.legendaryStart ?: false}, World Wrap: ${p.worldWrap ?: true}, Skip: ${p.skipTurnHours ?: 12}h, Auto-Resign: ${p.averageTurnTimeHours ?: 4}h")
+                    }
+                }
+                event.reply(text).queue()
+            }
+
+            "admincreatepreset" -> {
+                val name = event.getOption("name")!!.asString
+                val mapSize = event.getOption("map_size")?.asString
+                val mapType = event.getOption("map_type")?.asString
+                val difficulty = event.getOption("difficulty")?.asString
+                val cityStates = event.getOption("city_states")?.asString
+                val strategicBalance = event.getOption("strategic_balance")?.asBoolean
+                val legendaryStart = event.getOption("legendary_start")?.asBoolean
+                val worldWrap = event.getOption("world_wrap")?.asBoolean
+                val skipTurnHours = event.getOption("skip_turn_hours")?.asInt
+                val avgTimeHours = event.getOption("average_time_autoresign_hours")?.asInt
+
+                val preset = com.unciv.discord.model.GamePreset(
+                    name = name,
+                    mapSize = mapSize,
+                    mapType = mapType,
+                    difficulty = difficulty,
+                    cityStates = cityStates,
+                    strategicBalance = strategicBalance,
+                    legendaryStart = legendaryStart,
+                    worldWrap = worldWrap,
+                    skipTurnHours = skipTurnHours,
+                    averageTurnTimeHours = avgTimeHours
+                )
+                PlayerManager.createPreset(data, preset)
+                event.reply("✅ Successfully created/updated game preset **`$name`**!").setEphemeral(true).queue()
+            }
+
+            "admindeletepreset" -> {
+                val name = event.getOption("name")!!.asString
+                val success = PlayerManager.deletePreset(data, name)
+                if (success) {
+                    event.reply("✅ Successfully deleted custom preset **`$name`**!").setEphemeral(true).queue()
+                } else {
+                    event.reply("❌ Custom preset **`$name`** not found.").setEphemeral(true).queue()
+                }
+            }
             "admingametimer" -> {
                 val gameId = event.getOption("game_id")!!.asString
                 event.deferReply(true).queue()
@@ -516,6 +587,9 @@ class CommandListener : ListenerAdapter() {
                             trackedGamesData
                         )
                         if (trackedGame != null) {
+                            if (proposal.presetName != null) {
+                                PlayerManager.recordPresetUsage(data, proposal.presetName)
+                            }
                             event.hook.editOriginal("🏆 **All players accepted!** Successfully generated a new Unciv map and uploaded game to server!\n**Game ID:** `${trackedGame.gameId}`")
                                 .setComponents()
                                 .queue()

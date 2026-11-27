@@ -26,5 +26,7 @@ enum class AddIdResult {
 
 @Serializable
 data class BotData(
-    val players: MutableList<PlayerEntry> = mutableListOf()
+    val players: MutableList<PlayerEntry> = mutableListOf(),
+    val presets: MutableList<GamePreset> = mutableListOf(),
+    val presetUsage: MutableMap<String, Int> = mutableMapOf()
 )

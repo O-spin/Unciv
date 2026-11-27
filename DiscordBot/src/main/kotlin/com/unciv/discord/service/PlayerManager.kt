@@ -83,6 +83,50 @@ object PlayerManager {
 
     fun getTokens(data: BotData, userDiscordId: Long): Int? = getPlayer(data, userDiscordId)?.token
 
+    val builtinPresets = listOf(
+        com.unciv.discord.model.GamePreset("standard", mapSize = "Auto", mapType = "Pangaea", difficulty = "King", cityStates = "1x", strategicBalance = true, legendaryStart = false, worldWrap = true, skipTurnHours = 12, averageTurnTimeHours = 6)
+    )
+
+    fun getPreset(data: BotData, name: String): com.unciv.discord.model.GamePreset? {
+        val lowerName = name.lowercase()
+        builtinPresets.find { it.name.lowercase() == lowerName }?.let { return it }
+        return data.presets.find { it.name.equals(name, ignoreCase = true) }
+    }
+
+    fun listPresets(data: BotData): List<com.unciv.discord.model.GamePreset> {
+        val customNames = data.presets.map { it.name.lowercase() }.toSet()
+        val builtinsFiltered = builtinPresets.filter { it.name.lowercase() !in customNames }
+        return builtinsFiltered + data.presets
+    }
+
+    fun createPreset(data: BotData, preset: com.unciv.discord.model.GamePreset): Boolean {
+        data.presets.removeIf { it.name.equals(preset.name, ignoreCase = true) }
+        data.presets.add(preset)
+        StorageService.saveData(data)
+        return true
+    }
+
+    fun deletePreset(data: BotData, name: String): Boolean {
+        val removed = data.presets.removeIf { it.name.equals(name, ignoreCase = true) }
+        if (removed) {
+            StorageService.saveData(data)
+        }
+        return removed
+    }
+
+    fun recordPresetUsage(data: BotData, presetName: String) {
+        val count = (data.presetUsage[presetName] ?: 0) + 1
+        data.presetUsage[presetName] = count
+        StorageService.saveData(data)
+        println("📈 Preset used: '$presetName' (Total uses: $count)")
+    }
+
+    fun getPresetUsageStats(data: BotData): String {
+        if (data.presetUsage.isEmpty()) return "No preset usage recorded yet."
+        return data.presetUsage.entries.sortedByDescending { it.value }
+            .joinToString("\n") { "• **`${it.key}`**: ${it.value} uses" }
+    }
+
     fun leaderboard(data: BotData): String {
         val sorted = data.players.sortedByDescending { it.elo }
         return sorted.take(10).mapIndexed { i, player -> 

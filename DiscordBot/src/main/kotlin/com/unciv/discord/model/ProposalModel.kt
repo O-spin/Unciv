@@ -10,6 +10,7 @@ data class GameProposal(
     val proposalId: String,
     val proposerId: Long,
     val playersInput: String,
+    val presetName: String? = null,
     val mapSize: String?,
     val mapType: String?,
     val difficulty: String?,

@@ -16,23 +16,23 @@
 PROJECT_DIR="$(dirname "$(realpath "$0")")"
 cd "$PROJECT_DIR"
 
-echo "🤖 UncivRankedBot Linux Watchdog Script Started."
+echo " UncivRankedBot Linux Watchdog Script Started."
 
 while true; do
     echo "=================================================="
-    echo "🔨 Building project distribution (:DiscordBot:installDist)..."
+    echo " Building project distribution (:DiscordBot:installDist)..."
     echo "=================================================="
 
     ./gradlew :DiscordBot:installDist
 
     if [ $? -ne 0 ]; then
-        echo "❌ Gradle build failed! Retrying in 30 seconds..."
+        echo " Gradle build failed! Retrying in 30 seconds..."
         sleep 30
         continue
     fi
 
     echo "=================================================="
-    echo "🚀 Starting Discord Bot..."
+    echo " Starting Discord Bot..."
     echo "=================================================="
 
     # Run the compiled bot executable from the Gradle application distribution output
@@ -40,20 +40,20 @@ while true; do
 
     EXIT_CODE=$?
 
-    echo "⚠️ Bot process exited with exit code: $EXIT_CODE"
+    echo "Bot process exited with exit code: $EXIT_CODE"
 
     if [ $EXIT_CODE -eq 99 ]; then
-        echo "🔄 Update & restart requested by bot (Exit code 99). Pulling latest changes from git..."
+        echo "Update & restart requested by bot (Exit code 99). Pulling latest changes from origin DiscordBot..."
         
-        git pull
+        git pull origin DiscordBot
         if [ $? -ne 0 ]; then
-            echo "❌ Git pull failed (possible merge conflicts or network issue). Waiting 60 seconds before retry..."
+            echo "Git pull failed (possible merge conflicts or network issue). Waiting 60 seconds before retry..."
             sleep 60
         else
-            echo "✅ Git pull successful."
+            echo "Git pull successful."
         fi
     else
-        echo "⚠️ Bot stopped unexpectedly or crashed. Restarting in 15 seconds..."
+        echo "Bot stopped unexpectedly or crashed. Restarting in 15 seconds..."
         sleep 15
     fi
 

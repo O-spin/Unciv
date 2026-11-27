@@ -28,7 +28,8 @@ data class GameTimerInfo(
     val playerMinutesBeforeForceResign: Int,
     val averageTurnTimeForAutoresignHours: Int,
     val currentPlayerAvgTurnTimeSeconds: Int,
-    val currentPlayerTurnsPlayedAsHuman: Int
+    val currentPlayerTurnsPlayedAsHuman: Int,
+    val turns: Int
 )
 
 object GameManager {
@@ -108,7 +109,8 @@ object GameManager {
                 playerMinutesBeforeForceResign = currentPlayerCiv.playerMinutesBeforeForceResign,
                 averageTurnTimeForAutoresignHours = averageTurnTime,
                 currentPlayerAvgTurnTimeSeconds = avgTurnTimeSeconds,
-                currentPlayerTurnsPlayedAsHuman = currentPlayerCiv.turnsPlayedAsHuman
+                currentPlayerTurnsPlayedAsHuman = currentPlayerCiv.turnsPlayedAsHuman,
+                turns = gameInfo.turns
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -224,6 +226,7 @@ object GameManager {
                 gameParameters.minutesUntilSkipTurn = skipHours * 60
                 gameParameters.baseRuleset = BaseRuleset.Civ_V_GnK.fullName
                 gameParameters.speed = "Quick"
+                gameParameters.espionageEnabled = true
 
                 mapParameters.mapSize = when (mapSizeStr?.lowercase()) {
                     "tiny" -> MapSize.Tiny

@@ -35,11 +35,11 @@ object DiscordBot {
                             println("   [Game ${timerInfo.gameId}] Skipping turn for ${timerInfo.currentPlayerCiv} (active for ${timerInfo.minutesActive}m)")
                             GameManager.skipTurn(game.gameId)
                         }
-                        // Auto-resign if player's average turn time exceeds the auto-resign threshold
+                        // Auto-resign if player's average turn time exceeds the auto-resign threshold (only after turn 10)
                         else {
                             val resignThresholdSeconds = timerInfo.averageTurnTimeForAutoresignHours * 3600
-                            if (timerInfo.currentPlayerAvgTurnTimeSeconds >= resignThresholdSeconds && timerInfo.currentPlayerTurnsPlayedAsHuman > 0) {
-                                println("   [Game ${timerInfo.gameId}] Resigning ${timerInfo.currentPlayerCiv} (avg turn time ${timerInfo.currentPlayerAvgTurnTimeSeconds}s exceeds threshold ${resignThresholdSeconds}s)")
+                            if (timerInfo.turns >= 10 && timerInfo.currentPlayerAvgTurnTimeSeconds >= resignThresholdSeconds && timerInfo.currentPlayerTurnsPlayedAsHuman > 0) {
+                                println("   [Game ${timerInfo.gameId}] Resigning ${timerInfo.currentPlayerCiv} (avg turn time ${timerInfo.currentPlayerAvgTurnTimeSeconds}s exceeds threshold ${resignThresholdSeconds}s on turn ${timerInfo.turns})")
                                 GameManager.resignCurrentPlayer(game.gameId)
                             }
                         }
@@ -127,10 +127,12 @@ object DiscordBot {
             //    .addOption(OptionType.USER, "winner", "Winner", true)
             //    .addOption(OptionType.USER, "loser", "Loser", true),
             Commands.slash("leaderboard", "Show top 10 players"),
+            Commands.slash("presetstats", "Show usage statistics for game presets"),
             Commands.slash("tokens", "Check your or another user's tokens")
                 .addOption(OptionType.USER, "user", "The user to check", false),
             Commands.slash("startgame", "Generate a new Unciv map and start an online multiplayer game")
                 .addOption(OptionType.STRING, "players", "Comma separated list (Discord mentions with optional :civ e.g. @user1, @user2 or @user1:Rome,@user2)", true)
+                .addOption(OptionType.STRING, "preset", "Optional game preset name", false)
                 .addOption(OptionType.STRING, "map_size", "Map size (Auto, Tiny, Small, Medium, Large, Huge) [Default: Auto]", false)
                 .addOption(OptionType.STRING, "map_type", "Map type (e.g. Pangaea, Archipelago, Fractal) [Default: Pangaea]", false)
                 .addOption(OptionType.STRING, "difficulty", "Game difficulty (e.g. Prince, King, Deity) [Default: King]", false)
@@ -140,6 +142,20 @@ object DiscordBot {
                 .addOption(OptionType.BOOLEAN, "world_wrap", "Enable world wrap [Default: true]", false)
                 .addOption(OptionType.INTEGER, "skip_turn_hours", "Hours until turn can be skipped [Default: 12]", false)
                 .addOption(OptionType.INTEGER, "average_time_autoresign_hours", "Average turn time for auto-resign in hours [Default: 4]", false),
+            Commands.slash("listpresets", "List all available game presets"),
+            Commands.slash("admincreatepreset", "Admin: Create or update a game preset")
+                .addOption(OptionType.STRING, "name", "Preset name", true)
+                .addOption(OptionType.STRING, "map_size", "Map size", false)
+                .addOption(OptionType.STRING, "map_type", "Map type", false)
+                .addOption(OptionType.STRING, "difficulty", "Difficulty", false)
+                .addOption(OptionType.STRING, "city_states", "City states", false)
+                .addOption(OptionType.BOOLEAN, "strategic_balance", "Strategic balance", false)
+                .addOption(OptionType.BOOLEAN, "legendary_start", "Legendary start", false)
+                .addOption(OptionType.BOOLEAN, "world_wrap", "World wrap", false)
+                .addOption(OptionType.INTEGER, "skip_turn_hours", "Skip turn hours", false)
+                .addOption(OptionType.INTEGER, "average_time_autoresign_hours", "Average turn time hours", false),
+            Commands.slash("admindeletepreset", "Admin: Delete a custom game preset")
+                .addOption(OptionType.STRING, "name", "Preset name", true),
             Commands.slash("admingametimer", "Admin: Check turn timer and auto-resign info for a game")
                 .addOption(OptionType.STRING, "game_id", "The game ID", true),
             Commands.slash("adminbackup", "Admin: Create timestamped backups of bot data and tracked games"),
