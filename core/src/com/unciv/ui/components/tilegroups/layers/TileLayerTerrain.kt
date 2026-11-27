@@ -18,6 +18,8 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
 
     val tileBaseImages: ArrayList<Image> = ArrayList()
     private var tileImageIdentifiers = listOf<String>()
+    /** Era and style of the owner the current images were picked for, see [TileSetStrings.getOwnedTileImageLocation] */
+    private var tileImageOwnerKey: String? = null
     private var bottomRightRiverImage: Image? = null
     private var bottomRiverImage: Image? = null
     private var bottomLeftRiverImage: Image? = null
@@ -171,12 +173,16 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
 
     private fun updateTileImage(viewingCiv: CivView?) {
         val tileBaseImageLocations = getTileBaseImageLocations(viewingCiv)
+        // Owned tiles can use an era or style specific image, so a new owner can change the images even when the base locations don't
+        val ownerKey = if (tileGroup.tileView.owningCity() == null) null
+            else tileGroup.tileView.getOwner()?.let { "${it.getEra().name}/${it.getStyleOrCivName()}" }
 
-        if (tileBaseImageLocations.size == tileImageIdentifiers.size) {
+        if (ownerKey == tileImageOwnerKey && tileBaseImageLocations.size == tileImageIdentifiers.size) {
             if (tileBaseImageLocations.withIndex().all { (i, imageLocation) -> tileImageIdentifiers[i] == imageLocation })
                 return // All image identifiers are the same as the current ones, no need to change anything
         }
         tileImageIdentifiers = tileBaseImageLocations
+        tileImageOwnerKey = ownerKey
 
         // Record where old terrain images sit in TileMapLayer so new ones can be inserted at
         // the same position, preserving the isometric Z-order established at map construction.
@@ -186,13 +192,14 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         // In ownedActors, terrain images precede river images; new terrain replaces from index 0.
         val ownedInsertIdx = if (mapInsertIdx >= 0) 0 else -1
 
-        for (image in tileBaseImages) removeOwnedActor(image)
+        for (i in 0 until tileBaseImages.size) removeOwnedActor(tileBaseImages[i])
         tileBaseImages.clear()
 
         var nextMapIdx = mapInsertIdx
         var nextOwnedIdx = ownedInsertIdx
 
-        for (baseLocation in tileBaseImageLocations) {
+        for (locationIndex in 0 until tileBaseImageLocations.size) {
+            val baseLocation = tileBaseImageLocations[locationIndex]
             // Here we check what actual tiles exist, and pick one - not at random, but based on the tile location,
             // so it stays consistent throughout the game
             if (!ImageGetter.imageExists(baseLocation)) continue
@@ -258,8 +265,8 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
             else -> Color.WHITE.cpy()
         }
 
-        for ((index, image) in tileBaseImages.withIndex())
-            image.color = if (index == 0) baseTerrainColor else color
+        for (index in 0 until tileBaseImages.size)
+            tileBaseImages[index].color = if (index == 0) baseTerrainColor else color
     }
 
     private fun updateRivers(displayBottomRight: Boolean, displayBottom: Boolean, displayBottomLeft: Boolean) {
@@ -291,8 +298,8 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         //
         // Reapplying the colour with every update is fine, and doesn't cause the tiles to get darker with every click, because the colours are always reset in either TileGroup.updateTileColor() or the early exit by super.update()/TileGroup.update().
         // Mutating the Color() in-place seems dangerous, but GDX source already mutates even when Kotlin notation suggests it's replacing.
-        for (image in tileBaseImages) {
-            image.color.lerp(BaseScreen.clearColor, 1-brightness)
+        for (i in 0 until tileBaseImages.size) {
+            tileBaseImages[i].color.lerp(BaseScreen.clearColor, 1-brightness)
         }
     }
 
@@ -316,7 +323,8 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
             .mix(tileView.getOwner()?.civName)
             .mix(tileView.owningCity() != null)
             .mix(tileView.hasBottomRightRiver).mix(tileView.hasBottomRiver).mix(tileView.hasBottomLeftRiver)
-        for (neighbor in tileGroup.neighbors) key = key.mix(neighbor.getCachedTerrainNameSet().hashCode())
+        val neighbors = tileGroup.neighbors
+        for (i in 0 until neighbors.size) key = key.mix(neighbors[i].getCachedTerrainNameSet().hashCode())
         return key
     }
 

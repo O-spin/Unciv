@@ -36,9 +36,9 @@ import com.unciv.utils.Concurrency
 import com.unciv.utils.toGdxArray
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 
@@ -62,7 +62,7 @@ class MapFileSelectTable(
     private val miniMapWrapper = Container<Group?>()
     private var mapPreviewJob: Job? = null
     private var preselectedName = mapParameters.name
-    private val descriptionLabel = "".toLabel()
+    private val descriptionLabel = "".toLabel().apply { setWrap(true) }
     private val descriptionLabelCell: Cell<Label>
 
     // The SelectBox auto displays the text a object.toString(), which on the FileHandle itself includes the folder path.
@@ -100,7 +100,7 @@ class MapFileSelectTable(
         useNationsButtonCell = add().pad(0f)
         row()
 
-        descriptionLabelCell = add(descriptionLabel)
+        descriptionLabelCell = add(descriptionLabel).width(columnWidth - 20f)
         descriptionLabelCell.height(0f).row()
 
         add(miniMapWrapper)
@@ -124,8 +124,9 @@ class MapFileSelectTable(
     private fun getMapFilesSequence() = getUnsortedMapFilesSequence().sortedByDescending { it.lastModified() }
 
     private fun addMapWrappersAsync() {
-        val mapFilesFlow = getMapFilesSequence().asFlow().map {
-            MapWrapper(it, MapSaver.loadMapPreview(it))
+        val mapFilesFlow = getMapFilesSequence().asFlow().mapNotNull {
+            try { MapWrapper(it, MapSaver.loadMapPreview(it)) }
+            catch (_: Throwable) { null }
         }
 
         loadingIcon.show()
@@ -137,7 +138,6 @@ class MapFileSelectTable(
                         addAsyncEntryToSelectBoxes(it)
                     }
                 }
-                .catch {}
                 .collect()
             Concurrency.runOnGLThread {
                 loadingIcon.hide {
@@ -349,6 +349,7 @@ class MapFileSelectTable(
 
     private fun showDescription(text: String) {
         descriptionLabel.setText(text)
+        descriptionLabel.width = columnWidth - 20f
         descriptionLabelCell
             .height(if (text.isEmpty()) 0f else descriptionLabel.prefHeight)
             .padTop(if (text.isEmpty()) 0f else 10f)
