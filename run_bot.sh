@@ -16,29 +16,33 @@
 PROJECT_DIR="$(dirname "$(realpath "$0")")"
 cd "$PROJECT_DIR"
 
-echo " UncivRankedBot Linux Watchdog Script Started."
+echo "UncivRankedBot Linux Watchdog Script Started."
 
 while true; do
     echo "=================================================="
-    echo " Building project distribution (:DiscordBot:installDist)..."
+    echo "Building project distribution (:DiscordBot:installDist)..."
     echo "=================================================="
 
     ./gradlew :DiscordBot:installDist
 
     if [ $? -ne 0 ]; then
-        echo " Gradle build failed! Retrying in 30 seconds..."
+        echo "Gradle build failed! Retrying in 30 seconds..."
         sleep 30
         continue
     fi
 
     echo "=================================================="
-    echo " Starting Discord Bot..."
+    echo "Starting Discord Bot..."
     echo "=================================================="
 
-    # Run the compiled bot executable from the Gradle application distribution output
-    ./DiscordBot/build/install/DiscordBot/bin/DiscordBot
-
+    # Change into DiscordBot/build so that relative paths (../../DiscordBot/...) resolve correctly
+    cd "$PROJECT_DIR/android/assets"
+    "$PROJECT_DIR/DiscordBot/build/install/DiscordBot/bin/DiscordBot"
     EXIT_CODE=$?
+    cd "$PROJECT_DIR"
+
+    # Return to project root for git pull / gradlew in the next loop iteration
+    cd "$PROJECT_DIR"
 
     echo "Bot process exited with exit code: $EXIT_CODE"
 
